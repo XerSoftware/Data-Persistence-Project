@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
@@ -11,12 +12,19 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text HighScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
-    private int m_Points;
-    
     private bool m_GameOver = false;
+
+    private int m_Points;
+    private int m_HighScore;
+    
+    private string highScoreName;
+    private string currentName;
+
+    
 
     
     // Start is called before the first frame update
@@ -36,6 +44,7 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        LoadHighScore();
     }
 
     private void Update()
@@ -72,5 +81,49 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        if(m_Points > m_HighScore)
+        {
+            currentName = PlayerPrefs.GetString("PlayerName", "");
+            m_HighScore = m_Points;
+            HighScoreText.text = $"Score : {currentName} : {m_HighScore}";
+            SaveHighScore(currentName,m_HighScore);
+        }
+        
+        
+    }
+
+    [System.Serializable]
+    class SaveData
+    {
+        public int highScorePoint;
+        public string highScoreName;
+    }
+
+    public void SaveHighScore(string name, int highScore)
+    {
+        SaveData data = new SaveData();
+        data.highScoreName = name;
+        data.highScorePoint = highScore;
+        
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/save_highscore.json", json);
+    }
+
+    public void LoadHighScore()
+    {
+        string path = Application.persistentDataPath + "/save_highscore.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            highScoreName = data.highScoreName;
+            m_HighScore = data.highScorePoint;
+            HighScoreText.text = $"Score : {highScoreName} : {m_HighScore}";
+        }
+
+
+
     }
 }
